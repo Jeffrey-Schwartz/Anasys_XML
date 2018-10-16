@@ -1,0 +1,5 @@
+cdecode.lo: cdecode.c /usr/include/stdc-predef.h cdecode.h
+
+/usr/include/stdc-predef.h:
+
+cdecode.h:
