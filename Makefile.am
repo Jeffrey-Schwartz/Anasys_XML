@@ -1,6 +1,6 @@
 # You will likely have to change the following two lines
-module_LTLIBRARIES = anasys_xml.la cdecode.la
-anasys_xml_la_SOURCES = anasys_xml.c cdecode.c
+module_LTLIBRARIES = anasys_xml.la
+anasys_xml_la_SOURCES = anasys_xml.c
 
 # The rest is quite generic unless your module uses extra libraries
 ACLOCAL_AMFLAGS = -I m4

@@ -134,15 +134,12 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(moduledir)"
 LTLIBRARIES = $(module_LTLIBRARIES)
 anasys_xml_la_LIBADD =
-am_anasys_xml_la_OBJECTS = anasys_xml.lo cdecode.lo
+am_anasys_xml_la_OBJECTS = anasys_xml.lo
 anasys_xml_la_OBJECTS = $(am_anasys_xml_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-cdecode_la_LIBADD =
-cdecode_la_SOURCES = cdecode.c
-cdecode_la_OBJECTS = cdecode.lo
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -177,8 +174,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(anasys_xml_la_SOURCES) cdecode.c
-DIST_SOURCES = $(anasys_xml_la_SOURCES) cdecode.c
+SOURCES = $(anasys_xml_la_SOURCES)
+DIST_SOURCES = $(anasys_xml_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -207,8 +204,8 @@ CTAGS = ctags
 CSCOPE = cscope
 AM_RECURSIVE_TARGETS = cscope
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in COPYING \
-	README compile config.guess config.sub depcomp install-sh \
-	ltmain.sh missing
+	compile config.guess config.sub depcomp install-sh ltmain.sh \
+	missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -352,8 +349,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
 # You will likely have to change the following two lines
-module_LTLIBRARIES = anasys_xml.la cdecode.la
-anasys_xml_la_SOURCES = anasys_xml.c cdecode.c
+module_LTLIBRARIES = anasys_xml.la
+anasys_xml_la_SOURCES = anasys_xml.c
 
 # The rest is quite generic unless your module uses extra libraries
 ACLOCAL_AMFLAGS = -I m4
@@ -454,9 +451,6 @@ clean-moduleLTLIBRARIES:
 anasys_xml.la: $(anasys_xml_la_OBJECTS) $(anasys_xml_la_DEPENDENCIES) $(EXTRA_anasys_xml_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK) -rpath $(moduledir) $(anasys_xml_la_OBJECTS) $(anasys_xml_la_LIBADD) $(LIBS)
 
-cdecode.la: $(cdecode_la_OBJECTS) $(cdecode_la_DEPENDENCIES) $(EXTRA_cdecode_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK) -rpath $(moduledir) $(cdecode_la_OBJECTS) $(cdecode_la_LIBADD) $(LIBS)
-
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -464,7 +458,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/anasys_xml.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cdecode.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

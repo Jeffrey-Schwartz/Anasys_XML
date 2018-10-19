@@ -666,7 +666,7 @@ anasys_xml.lo: anasys_xml.c /usr/include/stdc-predef.h \
  /usr/include/libxml2/libxml/globals.h /usr/include/libxml2/libxml/SAX.h \
  /usr/include/libxml2/libxml/xlink.h /usr/include/libxml2/libxml/SAX2.h \
  /usr/include/libxml2/libxml/xmlmemory.h \
- /usr/include/libxml2/libxml/threads.h cdecode.h
+ /usr/include/libxml2/libxml/threads.h
 
 /usr/include/stdc-predef.h:
 
@@ -2237,5 +2237,3 @@ get.h:
 /usr/include/libxml2/libxml/xmlmemory.h:
 
 /usr/include/libxml2/libxml/threads.h:
-
-cdecode.h:
