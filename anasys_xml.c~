@@ -1,5 +1,5 @@
 /*
- *  @(#) $Id: anasys_xml.c 2018-10-15 $
+ *  @(#) $Id: anasys_xml.c 2018-10-18 $
  *  Copyright (C) 2018 Jeffrey J. Schwartz.
  *  E-mail: schwartz@physics.ucla.edu
  *
@@ -61,35 +61,6 @@ static guint32       readHeightMaps  (GwyContainer *container, xmlDoc *doc,
                                       GError **error);
 static void          readSpectra     (GwyContainer *container, xmlDoc *doc,
                                       const xmlNode *curNode, GError **error);
-//static guchar*       decodeBase64    (const guchar* input);
-
-/*const xmlChar* DATA_CHANNEL        = (const xmlChar *)"DataChannel";
-const xmlChar* DATA_CHANNELS       = (const xmlChar *)"DataChannels";
-const xmlChar* DATA_POINTS         = (const xmlChar *)"DataPoints";
-const xmlChar* END_WAVENUMBER      = (const xmlChar *)"EndWavenumber";
-const xmlChar* FEMTO               = (const xmlChar *)"f";
-const xmlChar* HEIGHT_MAPS         = (const xmlChar *)"HeightMaps";
-const xmlChar* IR_RENDERED_SPECTRA = (const xmlChar *)"IRRenderedSpectra";
-const xmlChar* LABEL               = (const xmlChar *)"Label";
-const xmlChar* LOCATION            = (const xmlChar *)"Location";
-const xmlChar* MICRO               = (const xmlChar *)"u";
-const xmlChar* MILLI               = (const xmlChar *)"m";
-const xmlChar* NAME                = (const xmlChar *)"Name";
-const xmlChar* NANO                = (const xmlChar *)"n";
-const xmlChar* PICO                = (const xmlChar *)"p";
-const xmlChar* POSITION            = (const xmlChar *)"Position";
-const xmlChar* RENDERED_SPECTRA    = (const xmlChar *)"RenderedSpectra";
-const xmlChar* RESOLUTION          = (const xmlChar *)"Resolution";
-const xmlChar* SAMPLE_BASE_64      = (const xmlChar *)"SampleBase64";
-const xmlChar* SCAN_ANGLE          = (const xmlChar *)"ScanAngle";
-const xmlChar* SIZE                = (const xmlChar *)"Size";
-const xmlChar* START_WAVENUMBER    = (const xmlChar *)"StartWavenumber";
-const xmlChar* TAGS                = (const xmlChar *)"Tags";
-const xmlChar* UNITS               = (const xmlChar *)"Units";
-const xmlChar* UNIT_PREFIX         = (const xmlChar *)"UnitPrefix";
-const xmlChar* VALUE               = (const xmlChar *)"Value";
-const xmlChar* X                   = (const xmlChar *)"X";
-const xmlChar* Y                   = (const xmlChar *)"Y";*/
 
 const gdouble PI_over_180          = G_PI / 180.0;
 
@@ -272,10 +243,8 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
                                                posNode->xmlChildrenNode, 1);
                     if (xmlStrEqual(posNode->name, (const xmlChar *)"X"))
                         pos_x = g_ascii_strtod((const gchar *)key, endptr);
-                        //pos_x = (gdouble)atof((char *)key);                       
                     else if (xmlStrEqual(posNode->name, (const xmlChar *)"Y"))
                         pos_y = g_ascii_strtod((const gchar *)key, endptr);
-                        //pos_y = (gdouble)atof((char *)key);                           
                     tempStr = g_strdup_printf("Position_%s", posNode->name);
                     gwy_container_set_const_string_by_name(meta, tempStr,
                                                            (guchar *)key);
@@ -294,10 +263,8 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
                                                sizeNode->xmlChildrenNode, 1);
                     if (xmlStrEqual(sizeNode->name, (const xmlChar *)"X"))
                         range_x = g_ascii_strtod((const gchar *)key, endptr);
-                        //range_x = (gdouble)atof((char *)key);
                     else if (xmlStrEqual(sizeNode->name, (const xmlChar *)"Y"))
                         range_y = g_ascii_strtod((const gchar *)key, endptr);
-                        //range_y = (gdouble)atof((char *)key);
                     tempStr = g_strdup_printf("Size_%s", sizeNode->name);
                     gwy_container_set_const_string_by_name(meta, tempStr,
                                                            (guchar *)key);
@@ -364,11 +331,8 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
                     if (xmlStrEqual(xmlPropValue1,
                                     (const xmlChar *)"ScanAngle"))
                     {
-                        //gchar value[30];
                         xmlPropValue2 = xmlGetProp(tagNode,
                                                    (const xmlChar *)"Value");
-                        //g_snprintf(value, sizeof(value), "%s ", xmlPropValue2);
-                        //char *p = strchr(value, ' ');
                         char *p = strchr((const gchar *)xmlPropValue2, ' ');
                         if (p)
                         {
@@ -376,7 +340,6 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
                             scan_angle = g_ascii_strtod(
                                                 (const gchar *)xmlPropValue2,
                                                 endptr);
-                            //scan_angle = g_ascii_strtod(value, endptr);
                             while (scan_angle > 180.0)
                                 scan_angle -= 360.0;
                             while (scan_angle <= -180.0)
@@ -427,7 +390,7 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
                         tempStr = g_strdup_printf("%s_%s",
                                                            tempNode->name,
                                                            subNode->name);
-	                    gwy_container_set_const_string_by_name(meta, tempStr,
+	                     gwy_container_set_const_string_by_name(meta, tempStr,
                                                                (guchar *)key);
                         g_free(tempStr);
                         xmlFree(key);
@@ -447,39 +410,19 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
 
         data = gwy_data_field_get_data(dfield);
 
-        //decodedData = decodeBase64(base64DataString);
-        //readMarker = decodedData;
-        //for (guint32 k = 0; k < resolution_x * resolution_y; ++k)
-        //    data[k] = gwy_get_gfloat_le(&readMarker);
-        //gwy_data_field_multiply(dfield, zUnitMultiplier);
-
         decodedData = g_base64_decode((const gchar *)base64DataString,
                                       &decoded_size);
         if (decoded_size != sizeof(gfloat)*num_px)
         {
-            err_SIZE_MISMATCH(error,
-                              (guint32)sizeof(gfloat)*num_px,
-                              (guint32)decoded_size, TRUE);
-            continue;
+            //err_SIZE_MISMATCH(error,
+            //                  (guint32)sizeof(gfloat)*num_px,
+            //                  (guint32)decoded_size, TRUE);
+				return valid_images;
+            //continue;
         }
         gwy_convert_raw_data(decodedData, num_px, 1,
                              GWY_RAW_DATA_FLOAT, GWY_BYTE_ORDER_LITTLE_ENDIAN,
                              data, zUnitMultiplier, 0.0);
-
-        /*px_x = range_x / resolution_x;
-        px_y = range_y / resolution_y;
-        if (px_x > px_y)
-        {
-            const guint32 new_res_x = MAX(GWY_ROUND(range_x / px_y), 1);
-            gwy_data_field_resample(dfield, new_res_x, resolution_y,
-                                    GWY_INTERPOLATION_BSPLINE);
-        }
-        else if (px_x < px_y)
-        {
-            const guint32 new_res_y = MAX(GWY_ROUND(range_y / px_x), 1);
-            gwy_data_field_resample(dfield, resolution_x, new_res_y,
-                                    GWY_INTERPOLATION_BSPLINE);
-        }*/
 
         if (scan_angle == 0.0)
         {
@@ -672,7 +615,6 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
             {
                 key = xmlNodeListGetString(doc, subNode->xmlChildrenNode, 1);
                 startWavenum = g_ascii_strtod((const gchar *)key, endptr);
-                //startWavenum = (gdouble)atof((char *)key);
                 xmlFree(key);
             }
             else if (xmlStrEqual(subNode->name,
@@ -680,7 +622,6 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
             {
                 key = xmlNodeListGetString(doc, subNode->xmlChildrenNode, 1);
                 endWavenum = g_ascii_strtod((const gchar *)key, endptr);
-                //endWavenum = (gdouble)atof((char *)key);
                 xmlFree(key);
             }
             else if (xmlStrEqual(subNode->name, (const xmlChar *)"Location"))
@@ -695,11 +636,9 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
                     if (xmlStrEqual(locNode->name, (const xmlChar *)"X"))
                         location_x = g_ascii_strtod((const gchar *)key,
                                                     endptr);
-                        //location_x = (gdouble)atof((char *)key);
                     else if (xmlStrEqual(locNode->name, (const xmlChar *)"Y"))
                         location_y = g_ascii_strtod((const gchar *)key,
                                                     endptr);
-                        //location_y = (gdouble)atof((char *)key);
                     xmlFree(key);
                 }
             }
@@ -744,14 +683,11 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
                                     NULL);
 
         ydata = gwy_data_line_get_data(dataline);
-        /*decodedData = decodeBase64(base64SpecString);
-        readMarker = decodedData;
-        for (guint32 k = 0; k < numDataPoints; ++k)
-            ydata[k] = gwy_get_gfloat_le(&readMarker);*/
         decodedData = g_base64_decode((const gchar *)base64SpecString,
                                       &decoded_size);
         if (decoded_size != sizeof(gfloat)*numDataPoints)
         {
+			  printf("\n\n%i\n\n", specNum);//, xmlGetProp(childNode, (const xmlChar *)"Label"));
             err_SIZE_MISMATCH(error, sizeof(gfloat)*numDataPoints,
                               decoded_size, TRUE);
             g_free(base64SpecString);
@@ -769,19 +705,3 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
     }
     gwy_container_set_object_by_name(container, "/sps/0", spectra_all);
 }
-
-/*static guchar*
-decodeBase64(const guchar* input)
-{
-    const guint32 inputStrLength = strlen((gchar *)input);
-    const guint32 length = (guint32)((gdouble)inputStrLength*6.0*0.125) + 1;
-    gchar* output = malloc(length);
-    gchar* c = output;
-    gint32 cnt = 0;
-    base64_decodestate s;
-    base64_init_decodestate(&s);
-    cnt = base64_decode_block((gchar *)input, inputStrLength, c, &s);
-    c += cnt;
-    *c = 0;
-    return (guchar *)output;
-}*/
