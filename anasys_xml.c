@@ -56,7 +56,7 @@
 #define MAGIC "a\0n\0a\0s\0y\0s\0i\0n\0s\0t\0r\0u\0m\0e\0n\0t\0s\0.\0c\0o\0m\0"
 #define MAGIC_SIZE (sizeof(MAGIC) - 1)
 
-/* Wnly ever pass ASCII strings.  So the typecasting, mean to catch signed vs.
+/* Only ever pass ASCII strings.  So the typecasting, mean to catch signed vs.
  * unsigned char problems, is not useful, just annoying. */
 #define strequal(a, b) xmlStrEqual((a), (const xmlChar*)(b))
 #define getprop(elem, name) xmlGetProp((elem), (const xmlChar*)(name))
@@ -384,7 +384,6 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
             }
         }
 
-        /* XXX: Should we fail hard with an error? */
         if (!base64DataString) {
             g_object_unref(meta);
             g_free(zUnit);
@@ -416,7 +415,7 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
             g_free(zUnit);
             g_free(decodedData);
             g_free(base64DataString);
-            return 0;
+            continue;
         }
         gwy_convert_raw_data(decodedData, num_px, 1,
                              GWY_RAW_DATA_FLOAT, GWY_BYTE_ORDER_LITTLE_ENDIAN,
@@ -544,6 +543,8 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
     guchar *base64SpecString;
     guchar *decodedData;
     gchar *tempStr;
+    gchar *label = NULL;
+    gchar *polarization = NULL;
     gchar **endptr;
     gdouble *ydata;
     GwyDataLine *dataline;
@@ -553,7 +554,7 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
     gwy_si_unit_set_from_string(gwy_spectra_get_si_unit_xy(spectra_all), "m");
     gwy_spectra_set_spectrum_x_label(spectra_all,
                                      "Wavenumber (cm<sup>-1</sup>)");
-    gwy_spectra_set_title(spectra_all, "All Spectra");
+    gwy_spectra_set_title(spectra_all, "All Spectra (Polarization)");
     for (childNode = curNode->children;
          childNode;
          childNode = childNode->next) {
@@ -582,10 +583,8 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
                 continue;
             if (strequal(subNode->name, "Label")) {
                 key = xmlNodeListGetString(doc, subNode->xmlChildrenNode, 1);
-                tempStr = g_strdup((gchar *)key);
-                gwy_spectra_set_title(spectra, tempStr);
+                label = g_strdup((gchar *)key);
                 xmlFree(key);
-                g_free(tempStr);
             }
             else if (strequal(subNode->name, "DataPoints")) {
                 key = xmlNodeListGetString(doc,
@@ -601,6 +600,11 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
             else if (strequal(subNode->name, "EndWavenumber")) {
                 key = xmlNodeListGetString(doc, subNode->xmlChildrenNode, 1);
                 endWavenum = g_ascii_strtod((const gchar*)key, endptr);
+                xmlFree(key);
+            }
+            else if (strequal(subNode->name, "Polarization")) {
+                key = xmlNodeListGetString(doc, subNode->xmlChildrenNode, 1);
+                polarization = g_strdup((gchar *)key);
                 xmlFree(key);
             }
             else if (strequal(subNode->name, "Location")) {
@@ -638,7 +642,12 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
                 }
             }
         }
-        /* XXX: Should we fail hard with an error? */
+        tempStr = g_strdup_printf("%s (%s)", label, polarization);
+        gwy_spectra_set_title(spectra, tempStr);
+        g_free(tempStr);
+        g_free(label);
+        g_free(polarization);
+
         if (!base64SpecString) {
             g_object_unref(spectra);
             continue;
@@ -671,7 +680,7 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
             g_object_unref(spectra);
             g_free(decodedData);
             g_free(base64SpecString);
-            return FALSE;
+            continue;
         }
         gwy_convert_raw_data(decodedData, numDataPoints, 1,
                              GWY_RAW_DATA_FLOAT, GWY_BYTE_ORDER_LITTLE_ENDIAN,
