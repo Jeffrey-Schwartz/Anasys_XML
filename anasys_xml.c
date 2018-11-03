@@ -74,8 +74,7 @@ static guint32       readHeightMaps (GwyContainer *container,
                                      GError **error);
 static gboolean      readSpectra    (GwyContainer *container,
                                      xmlDoc *doc,
-                                     const xmlNode *curNode,
-                                     GError **error);
+                                     const xmlNode *curNode);
 
 const gdouble PI_over_180          = G_PI / 180.0;
 
@@ -148,7 +147,7 @@ anasys_load(const gchar *filename,
             valid_images = readHeightMaps(container, doc, curNode,
                                           filename, error);
         else if (strequal(curNode->name, "RenderedSpectra")) {
-            if (!readSpectra(container, doc, curNode, error))
+            if (!readSpectra(container, doc, curNode))
                 valid_images = 0;
         }
     }
@@ -523,7 +522,7 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
 
 static gboolean
 readSpectra(GwyContainer *container, xmlDoc *doc,
-            const xmlNode *curNode, GError **error)
+            const xmlNode *curNode)
 {
     gchar id[40];
     guint32 specNum = 0;
@@ -652,7 +651,6 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
             g_object_unref(spectra);
             continue;
         }
-
         if (numDataPoints < 1) {
             g_object_unref(spectra);
             g_free(base64SpecString);
@@ -660,7 +658,7 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
         }
         dataline = gwy_data_line_new(numDataPoints,
             (endWavenum-startWavenum)*(1.0+(1.0/((gdouble)numDataPoints-1.0))),
-            FALSE);
+            TRUE);
         gwy_data_line_set_offset(dataline, startWavenum);
 
         gwy_spectra_add_spectrum(spectra, dataline,
@@ -675,8 +673,8 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
         ydata = gwy_data_line_get_data(dataline);
         decodedData = g_base64_decode((const gchar*)base64SpecString,
                                       &decoded_size);
-        if (err_SIZE_MISMATCH(error, sizeof(gfloat)*numDataPoints, decoded_size,
-                              TRUE)) {
+        numDataPoints = decoded_size / sizeof(gfloat);
+        if (numDataPoints < 1) {
             g_object_unref(spectra);
             g_free(decodedData);
             g_free(base64SpecString);
