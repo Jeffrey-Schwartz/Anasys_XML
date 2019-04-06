@@ -83,7 +83,7 @@ static GwyModuleInfo module_info = {
     &module_register,
     N_("Imports Analysis Studio XML (.axd) files."),
     "Jeffrey J. Schwartz <schwartz@physics.ucla.edu>",
-    "0.5",
+    "0.51",
     "Jeffrey J. Schwartz",
     "September 2018",
 };
@@ -690,7 +690,8 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
 
         g_free(base64SpecString);
     }
-    gwy_container_set_object_by_name(container, "/sps/0", spectra_all);
+    if (specNum > 0)
+        gwy_container_set_object_by_name(container, "/sps/0", spectra_all);
 
     return TRUE;
 }
