@@ -1,7 +1,7 @@
 dnl Lines you likely have to change in your own modules are marked with #####.
 
 #####AC_INIT([Module name], [module version], [bugreport address])
-AC_INIT([anasys_xml], [0.5], [schwartz@physics.ucla.edu])
+AC_INIT([anasys_xml], [0.51], [schwartz@physics.ucla.edu])
 AC_PREREQ(2.60)
 #####MODULE_TYPE=file, process, graph, tool, layer or leave empty
 MODULE_TYPE=file
