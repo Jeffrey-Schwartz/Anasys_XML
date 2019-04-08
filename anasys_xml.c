@@ -1,5 +1,5 @@
 /*
- *  $Id: anasys_xml.c 21587 2018-11-02 13:59:17Z yeti-dn $
+ *  $Id: anasys_xml.c 21960 2019-04-06 10:57:04Z yeti-dn $
  *  Copyright (C) 2018 Jeffrey J. Schwartz.
  *  E-mail: schwartz@physics.ucla.edu
  *
@@ -83,7 +83,7 @@ static GwyModuleInfo module_info = {
     &module_register,
     N_("Imports Analysis Studio XML (.axd) files."),
     "Jeffrey J. Schwartz <schwartz@physics.ucla.edu>",
-    "0.51",
+    "0.5.1",
     "Jeffrey J. Schwartz",
     "September 2018",
 };
