@@ -51,10 +51,14 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#define EXTENSION ".axd"
-#define MIN_SIZE 2173
-#define MAGIC "a\0n\0a\0s\0y\0s\0i\0n\0s\0t\0r\0u\0m\0e\0n\0t\0s\0.\0c\0o\0m\0"
-#define MAGIC_SIZE (sizeof(MAGIC) - 1)
+#define EXTENSION   ".axd"
+#define EXTENSION2  ".axz"
+#define MIN_SIZE    2173
+#define MIN_SIZE2   550
+#define MAGIC       "a\0n\0a\0s\0y\0s\0i\0n\0s\0t\0r\0u\0m\0e\0n\0t\0s\0.\0c\0o\0m\0"
+#define MAGIC2      "\x1F\x8B\x08\x00\x00\x00\x00\x00\x04\x00"
+#define MAGIC_SIZE  (sizeof(MAGIC) - 1)
+#define MAGIC2_SIZE (sizeof(MAGIC2) - 1)
 
 /* Only ever pass ASCII strings.  So the typecasting, mean to catch signed vs.
  * unsigned char problems, is not useful, just annoying. */
@@ -76,14 +80,14 @@ static gboolean      readSpectra    (GwyContainer *container,
                                      xmlDoc *doc,
                                      const xmlNode *curNode);
 
-const gdouble PI_over_180          = G_PI / 180.0;
+const gdouble PI_over_180        = G_PI / 180.0;
 
 static GwyModuleInfo module_info = {
     GWY_MODULE_ABI_VERSION,
     &module_register,
-    N_("Imports Analysis Studio XML (.axd) files."),
+    N_("Imports Analysis Studio XML (.axz & .axd) files."),
     "Jeffrey J. Schwartz <schwartz@physics.ucla.edu>",
-    "0.5.1",
+    "0.6",
     "Jeffrey J. Schwartz",
     "September 2018",
 };
@@ -94,7 +98,7 @@ static gboolean
 module_register(void)
 {
     gwy_file_func_register("anasys_xml",
-                           N_("Analysis Studio XML (.axd)"),
+                           N_("Analysis Studio XML (.axz, .axd)"),
                            (GwyFileDetectFunc)&anasys_detect,
                            (GwyFileLoadFunc)&anasys_load,
                            NULL,
@@ -107,11 +111,21 @@ anasys_detect(const GwyFileDetectInfo *fileinfo,
               gboolean only_name)
 {
     if (only_name)
-        return g_str_has_suffix(fileinfo->name_lowercase, EXTENSION) ? 20 : 0;
+        return (g_str_has_suffix(fileinfo->name_lowercase, EXTENSION) ||
+                g_str_has_suffix(fileinfo->name_lowercase, EXTENSION2)) ? 20 : 0;
+    /* AXD, plain text XML data files */
     if (fileinfo->buffer_len > MIN_SIZE &&
         g_str_has_suffix(fileinfo->name_lowercase, EXTENSION)) {
         if (gwy_memmem(fileinfo->head+350, 100, MAGIC, MAGIC_SIZE) != NULL)
+            return 100;
+    }
+    /* AXZ, gzip-compressed XML data files */
+    if (fileinfo->buffer_len > MIN_SIZE2 &&
+        g_str_has_suffix(fileinfo->name_lowercase, EXTENSION2)) {
+        if (gwy_memmem(fileinfo->head, 10, MAGIC2, MAGIC2_SIZE) != NULL){
+            printf("\nFound an axz file!\n");
             return 50;
+        }
     }
     return 0;
 }
