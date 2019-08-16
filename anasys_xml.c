@@ -1,5 +1,5 @@
 /*
- *  $Id: anasys_xml.c 21960 2019-04-06 10:57:04Z yeti-dn $
+ *  $Id: anasys_xml.c 22185 2019-07-02 20:57:55Z yeti-dn $
  *  Copyright (C) 2018 Jeffrey J. Schwartz.
  *  E-mail: schwartz@physics.ucla.edu
  *
@@ -31,7 +31,7 @@
 /**
  * [FILE-MAGIC-USERGUIDE]
  * Analysis Studio XML
- * .axd
+ * .axd, .axz
  * Read SPS
  **/
 
@@ -51,13 +51,13 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#define EXTENSION   ".axd"
+#define EXTENSION ".axd"
 #define EXTENSION2  ".axz"
-#define MIN_SIZE    2173
+#define MIN_SIZE 2173
 #define MIN_SIZE2   550
-#define MAGIC       "a\0n\0a\0s\0y\0s\0i\0n\0s\0t\0r\0u\0m\0e\0n\0t\0s\0.\0c\0o\0m\0"
+#define MAGIC "a\0n\0a\0s\0y\0s\0i\0n\0s\0t\0r\0u\0m\0e\0n\0t\0s\0.\0c\0o\0m\0"
 #define MAGIC2      "\x1F\x8B\x08\x00\x00\x00\x00\x00\x04\x00"
-#define MAGIC_SIZE  (sizeof(MAGIC) - 1)
+#define MAGIC_SIZE (sizeof(MAGIC) - 1)
 #define MAGIC2_SIZE (sizeof(MAGIC2) - 1)
 
 /* Only ever pass ASCII strings.  So the typecasting, mean to catch signed vs.
@@ -80,7 +80,7 @@ static gboolean      readSpectra    (GwyContainer *container,
                                      xmlDoc *doc,
                                      const xmlNode *curNode);
 
-const gdouble PI_over_180        = G_PI / 180.0;
+const gdouble PI_over_180          = G_PI / 180.0;
 
 static GwyModuleInfo module_info = {
     GWY_MODULE_ABI_VERSION,
@@ -122,8 +122,8 @@ anasys_detect(const GwyFileDetectInfo *fileinfo,
     /* AXZ, gzip-compressed XML data files */
     if (fileinfo->buffer_len > MIN_SIZE2 &&
         g_str_has_suffix(fileinfo->name_lowercase, EXTENSION2)) {
-        if (gwy_memmem(fileinfo->head, 10, MAGIC2, MAGIC2_SIZE) != NULL){
-            printf("\nFound an axz file!\n");
+        if (gwy_memmem(fileinfo->head, 10, MAGIC2, MAGIC2_SIZE) != NULL) {
+            gwy_debug("Found an axz file!");
             return 50;
         }
     }
