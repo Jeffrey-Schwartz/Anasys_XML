@@ -52,11 +52,11 @@
 #include <libxml/tree.h>
 
 #define EXTENSION ".axd"
-#define EXTENSION2  ".axz"
+#define EXTENSION2 ".axz"
 #define MIN_SIZE 2173
-#define MIN_SIZE2   550
+#define MIN_SIZE2 550
 #define MAGIC "a\0n\0a\0s\0y\0s\0i\0n\0s\0t\0r\0u\0m\0e\0n\0t\0s\0.\0c\0o\0m\0"
-#define MAGIC2      "\x1F\x8B\x08\x00\x00\x00\x00\x00\x04\x00"
+#define MAGIC2 "\x1F\x8B\x08\x00\x00\x00\x00\x00\x04\x00"
 #define MAGIC_SIZE (sizeof(MAGIC) - 1)
 #define MAGIC2_SIZE (sizeof(MAGIC2) - 1)
 
@@ -538,7 +538,7 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
             const xmlNode *curNode)
 {
     gchar id[40];
-    guint32 specNum = 0;
+    guint32 specID = 0;
 
     xmlChar *key;
     xmlChar *xmlPropValue1;
@@ -557,6 +557,7 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
     gchar *tempStr;
     gchar *label = NULL;
     gchar *polarization = NULL;
+    gchar *channelName = NULL;
     gchar **endptr;
     gdouble *ydata;
     GwyDataLine *dataline;
@@ -566,7 +567,7 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
     gwy_si_unit_set_from_string(gwy_spectra_get_si_unit_xy(spectra_all), "m");
     gwy_spectra_set_spectrum_x_label(spectra_all,
                                      "Wavenumber (cm<sup>-1</sup>)");
-    gwy_spectra_set_title(spectra_all, "All Spectra (Polarization)");
+    gwy_spectra_set_title(spectra_all, "All Spectra (Polarization): DataChannel");
     for (childNode = curNode->children;
          childNode;
          childNode = childNode->next) {
@@ -574,7 +575,6 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
             continue;
         if (strequal(childNode->name, "IRRenderedSpectra") == 0)
             continue;
-        ++specNum;
 
         endptr = 0;
         xmlPropValue1 = NULL;
@@ -584,18 +584,13 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
         startWavenum = 0.0;
         endWavenum = 0.0;
         numDataPoints = 0;
-        base64SpecString = NULL;
-        spectra = gwy_spectra_new();
-        gwy_si_unit_set_from_string(gwy_spectra_get_si_unit_xy(spectra), "m");
-        gwy_spectra_set_spectrum_x_label(spectra,
-                                         "Wavenumber (cm<sup>-1</sup>)");
 
         for (subNode = childNode->children; subNode; subNode = subNode->next) {
             if (subNode->type != XML_ELEMENT_NODE)
                 continue;
             if (strequal(subNode->name, "Label")) {
                 key = xmlNodeListGetString(doc, subNode->xmlChildrenNode, 1);
-                label = g_strdup((gchar *)key);
+                label = g_strdup((gchar*)key);
                 xmlFree(key);
             }
             else if (strequal(subNode->name, "DataPoints")) {
@@ -616,7 +611,7 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
             }
             else if (strequal(subNode->name, "Polarization")) {
                 key = xmlNodeListGetString(doc, subNode->xmlChildrenNode, 1);
-                polarization = g_strdup((gchar *)key);
+                polarization = g_strdup((gchar*)key);
                 xmlFree(key);
             }
             else if (strequal(subNode->name, "Location")) {
@@ -635,9 +630,17 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
                 }
             }
             else if (strequal(subNode->name, "DataChannels")) {
+                ++specID;
+                base64SpecString = NULL;
+                spectra = gwy_spectra_new();
+                gwy_si_unit_set_from_string(gwy_spectra_get_si_unit_xy(spectra), "m");
+                gwy_spectra_set_spectrum_x_label(spectra,
+                                                 "Wavenumber (cm<sup>-1</sup>)");
+                
                 xmlPropValue1 = getprop(subNode, "DataChannel");
                 gwy_spectra_set_spectrum_y_label(spectra,
                                                  (gchar*)xmlPropValue1);
+                channelName = g_strdup((gchar*)xmlPropValue1);
                 xmlFree(xmlPropValue1);
                 for (dcNode = subNode->children;
                      dcNode;
@@ -652,58 +655,60 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
                         break;
                     }
                 }
+
+                tempStr = g_strdup_printf("%s (%s): %s", label, polarization, channelName);
+                gwy_spectra_set_title(spectra, tempStr);
+                g_free(channelName);
+                g_free(tempStr);
+
+                if (!base64SpecString) {
+                    g_object_unref(spectra);
+                    continue;
+                }
+                if (numDataPoints < 1) {
+                    g_object_unref(spectra);
+                    g_free(base64SpecString);
+                    continue;
+                }
+                dataline = gwy_data_line_new(numDataPoints,
+                    (endWavenum-startWavenum)*(1.0+(1.0/((gdouble)numDataPoints-1.0))),
+                    TRUE);
+                gwy_data_line_set_offset(dataline, startWavenum);
+
+                gwy_spectra_add_spectrum(spectra, dataline,
+                                         location_x*1.0e-6, location_y*1.0e-6);
+                gwy_spectra_add_spectrum(spectra_all, dataline,
+                                         location_x*1.0e-6, location_y*1.0e-6);
+                gwy_si_unit_set_from_string(gwy_data_line_get_si_unit_x(dataline),
+                                            NULL);
+                gwy_si_unit_set_from_string(gwy_data_line_get_si_unit_y(dataline),
+                                            NULL);
+
+                ydata = gwy_data_line_get_data(dataline);
+                decodedData = g_base64_decode((const gchar*)base64SpecString,
+                                              &decoded_size);
+                numDataPoints = decoded_size / sizeof(gfloat);
+                if (numDataPoints < 1) {
+                    g_object_unref(spectra);
+                    g_free(decodedData);
+                    g_free(base64SpecString);
+                    continue;
+                }
+                gwy_convert_raw_data(decodedData, numDataPoints, 1,
+                                     GWY_RAW_DATA_FLOAT, GWY_BYTE_ORDER_LITTLE_ENDIAN,
+                                     ydata, 1.0, 0.0);
+                g_free(decodedData);
+
+                g_snprintf(id, sizeof(id), "/sps/%i", specID);
+                gwy_container_set_object_by_name(container, id, spectra);
+
+                g_free(base64SpecString);
             }
         }
-        tempStr = g_strdup_printf("%s (%s)", label, polarization);
-        gwy_spectra_set_title(spectra, tempStr);
-        g_free(tempStr);
         g_free(label);
         g_free(polarization);
-
-        if (!base64SpecString) {
-            g_object_unref(spectra);
-            continue;
-        }
-        if (numDataPoints < 1) {
-            g_object_unref(spectra);
-            g_free(base64SpecString);
-            continue;
-        }
-        dataline = gwy_data_line_new(numDataPoints,
-            (endWavenum-startWavenum)*(1.0+(1.0/((gdouble)numDataPoints-1.0))),
-            TRUE);
-        gwy_data_line_set_offset(dataline, startWavenum);
-
-        gwy_spectra_add_spectrum(spectra, dataline,
-                                 location_x*1.0e-6, location_y*1.0e-6);
-        gwy_spectra_add_spectrum(spectra_all, dataline,
-                                 location_x*1.0e-6, location_y*1.0e-6);
-        gwy_si_unit_set_from_string(gwy_data_line_get_si_unit_x(dataline),
-                                    NULL);
-        gwy_si_unit_set_from_string(gwy_data_line_get_si_unit_y(dataline),
-                                    NULL);
-
-        ydata = gwy_data_line_get_data(dataline);
-        decodedData = g_base64_decode((const gchar*)base64SpecString,
-                                      &decoded_size);
-        numDataPoints = decoded_size / sizeof(gfloat);
-        if (numDataPoints < 1) {
-            g_object_unref(spectra);
-            g_free(decodedData);
-            g_free(base64SpecString);
-            continue;
-        }
-        gwy_convert_raw_data(decodedData, numDataPoints, 1,
-                             GWY_RAW_DATA_FLOAT, GWY_BYTE_ORDER_LITTLE_ENDIAN,
-                             ydata, 1.0, 0.0);
-        g_free(decodedData);
-
-        g_snprintf(id, sizeof(id), "/sps/%i", specNum);
-        gwy_container_set_object_by_name(container, id, spectra);
-
-        g_free(base64SpecString);
     }
-    if (specNum > 0)
+    if (specID > 0)
         gwy_container_set_object_by_name(container, "/sps/0", spectra_all);
 
     return TRUE;
