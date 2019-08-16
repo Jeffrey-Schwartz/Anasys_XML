@@ -561,6 +561,7 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
     gchar **endptr;
     gdouble *ydata;
     GwyDataLine *dataline;
+    GwyDataLine *copy_dataline;
     GwySpectra *spectra;
 
     GwySpectra *spectra_all = gwy_spectra_new();
@@ -670,21 +671,6 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
                     g_free(base64SpecString);
                     continue;
                 }
-                dataline = gwy_data_line_new(numDataPoints,
-                    (endWavenum-startWavenum)*(1.0+(1.0/((gdouble)numDataPoints-1.0))),
-                    TRUE);
-                gwy_data_line_set_offset(dataline, startWavenum);
-
-                gwy_spectra_add_spectrum(spectra, dataline,
-                                         location_x*1.0e-6, location_y*1.0e-6);
-                gwy_spectra_add_spectrum(spectra_all, dataline,
-                                         location_x*1.0e-6, location_y*1.0e-6);
-                gwy_si_unit_set_from_string(gwy_data_line_get_si_unit_x(dataline),
-                                            NULL);
-                gwy_si_unit_set_from_string(gwy_data_line_get_si_unit_y(dataline),
-                                            NULL);
-
-                ydata = gwy_data_line_get_data(dataline);
                 decodedData = g_base64_decode((const gchar*)base64SpecString,
                                               &decoded_size);
                 numDataPoints = decoded_size / sizeof(gfloat);
@@ -694,14 +680,28 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
                     g_free(base64SpecString);
                     continue;
                 }
+                dataline = gwy_data_line_new(numDataPoints,
+                    (endWavenum-startWavenum)*(1.0+(1.0/((gdouble)numDataPoints-1.0))),
+                    TRUE);
+                gwy_data_line_set_offset(dataline, startWavenum);
+                ydata = gwy_data_line_get_data(dataline);
                 gwy_convert_raw_data(decodedData, numDataPoints, 1,
                                      GWY_RAW_DATA_FLOAT, GWY_BYTE_ORDER_LITTLE_ENDIAN,
                                      ydata, 1.0, 0.0);
                 g_free(decodedData);
 
+                copy_dataline = gwy_data_line_duplicate(dataline);
+                gwy_spectra_add_spectrum(spectra, dataline,
+                                         location_x*1.0e-6, location_y*1.0e-6);
+                gwy_spectra_add_spectrum(spectra_all, copy_dataline,
+                                         location_x*1.0e-6, location_y*1.0e-6);
+
                 g_snprintf(id, sizeof(id), "/sps/%i", specID);
                 gwy_container_set_object_by_name(container, id, spectra);
-
+                
+                g_object_unref(spectra);
+                g_object_unref(dataline);
+                g_object_unref(copy_dataline);
                 g_free(base64SpecString);
             }
         }
@@ -710,6 +710,8 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
     }
     if (specID > 0)
         gwy_container_set_object_by_name(container, "/sps/0", spectra_all);
+
+    g_object_unref(spectra_all);
 
     return TRUE;
 }
