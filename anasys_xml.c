@@ -1,5 +1,5 @@
 /*
- *  $Id: anasys_xml.c 22185 2019-07-02 20:57:55Z yeti-dn $
+ *  $Id: anasys_xml.c 22442 2019-08-27 12:41:00Z yeti-dn $
  *  Copyright (C) 2018 Jeffrey J. Schwartz.
  *  E-mail: schwartz@physics.ucla.edu
  *
@@ -33,6 +33,24 @@
  * Analysis Studio XML
  * .axd, .axz
  * Read SPS
+ **/
+
+/**
+ * [FILE-MAGIC-FREEDESKTOP]
+ * <mime-type type="application/x-analysis-studio-axd">
+ *   <comment>Analysis Studio AXD data</comment>
+ *   <glob pattern="*.axd"/>
+ *   <glob pattern="*.AXD"/>
+ * </mime-type>
+ **/
+
+/**
+ * [FILE-MAGIC-FREEDESKTOP]
+ * <mime-type type="application/x-analysis-studio-axz">
+ *   <comment>Analysis Studio AXZ compressed data</comment>
+ *   <glob pattern="*.axz"/>
+ *   <glob pattern="*.AXZ"/>
+ * </mime-type>
  **/
 
 #include <glib/gstdio.h>
@@ -637,7 +655,7 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
                 gwy_si_unit_set_from_string(gwy_spectra_get_si_unit_xy(spectra), "m");
                 gwy_spectra_set_spectrum_x_label(spectra,
                                                  "Wavenumber (cm<sup>-1</sup>)");
-                
+
                 xmlPropValue1 = getprop(subNode, "DataChannel");
                 gwy_spectra_set_spectrum_y_label(spectra,
                                                  (gchar*)xmlPropValue1);
@@ -698,7 +716,7 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
 
                 g_snprintf(id, sizeof(id), "/sps/%i", specID);
                 gwy_container_set_object_by_name(container, id, spectra);
-                
+
                 g_object_unref(spectra);
                 g_object_unref(dataline);
                 g_object_unref(copy_dataline);
