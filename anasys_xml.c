@@ -1,5 +1,5 @@
 /*
- *  $Id: anasys_xml.c 22442 2019-08-27 12:41:00Z yeti-dn $
+ *  $Id: anasys_xml.c 22917 2020-08-21 10:53:16Z yeti-dn $
  *  Copyright (C) 2018 Jeffrey J. Schwartz.
  *  E-mail: schwartz@physics.ucla.edu
  *
@@ -105,7 +105,7 @@ static GwyModuleInfo module_info = {
     &module_register,
     N_("Imports Analysis Studio XML (.axz & .axd) files."),
     "Jeffrey J. Schwartz <schwartz@physics.ucla.edu>",
-    "0.6",
+    "0.7",
     "Jeffrey J. Schwartz",
     "September 2018",
 };
@@ -212,17 +212,14 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
     gdouble zUnitMultiplier;
     guint32 resolution_x;
     guint32 resolution_y;
-    guint32 new_resolution_x;
-    guint32 new_resolution_y;
     guint32 num_px;
-    guint32 oblique_angle;
+    gboolean oblique_angle;
     gchar *zUnit;
     gchar *tempStr;
     gchar **endptr;
     guchar *decodedData;
     guchar *base64DataString;
     GwyDataField *dfield;
-    GwyDataField *dfield_resample;
     GwyDataField *dfield_rotate;
     GwyDataField *dfield_temp;
     GwyContainer *meta;
@@ -248,10 +245,8 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
         zUnitMultiplier = 1.0;
         resolution_x = 0;
         resolution_y = 0;
-        new_resolution_x = 0;
-        new_resolution_y = 0;
         num_px = 0;
-        oblique_angle = 0;
+        oblique_angle = FALSE;
         zUnit = NULL;
         tempStr = NULL;
         endptr = NULL;
@@ -484,25 +479,43 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
         }
         else {
             const gdouble rot_angle = PI_over_180 * scan_angle;
-            dfield_resample = dfield;
-            if ( (resolution_x > 128) || (resolution_y > 128) ) {
-                new_resolution_x = GWY_ROUND(0.125*resolution_x);
-                new_resolution_y = GWY_ROUND(0.125*resolution_y);
-                new_resolution_x = CLAMP(new_resolution_x, 16, 128);
-                new_resolution_y = CLAMP(new_resolution_y, 16, 128);
-                dfield_resample = gwy_data_field_new_resampled(dfield,
-                                                new_resolution_x,
-                                                new_resolution_y,
-                                                GWY_INTERPOLATION_BSPLINE);
+            /* Estimate the number of pixels in the image rotation with
+             * GWY_ROTATE_RESIZE_EXPAND will produce. */
+            gdouble casa = fabs(cos(rot_angle)*sin(rot_angle));
+            gdouble Lx = range_x, Ly = range_y;
+            gdouble nx = resolution_x, ny = resolution_y;
+            gdouble q = nx*ny/MIN(Lx*ny, Ly*nx);
+            gdouble estim_npixels = (Lx*Ly + (Lx*Lx + Ly*Ly)*casa)*q*q;
+            /* How much we need to reduce the size for a rotated image with
+             * sane pixel dimensions. */
+            gdouble reduction = sqrt(2048*2048/estim_npixels);
+
+            if (reduction < 1.0) {
+                GwyDataField *reduced_field;
+                gint reduced_xres = GWY_ROUND(reduction*resolution_x);
+                gint reduced_yres = GWY_ROUND(reduction*resolution_y);
+                reduced_xres = MAX(reduced_xres, 2);
+                reduced_yres = MAX(reduced_yres, 2);
+                reduced_field = gwy_data_field_new_resampled(dfield,
+                                                             reduced_xres,
+                                                             reduced_yres,
+                                                             GWY_INTERPOLATION_BSPLINE);
+                dfield_rotate = gwy_data_field_new_rotated(reduced_field,
+                                                           NULL, rot_angle,
+                                                           GWY_INTERPOLATION_BSPLINE,
+                                                           GWY_ROTATE_RESIZE_EXPAND);
+                g_object_unref(reduced_field);
             }
-            dfield_rotate = gwy_data_field_new_rotated(dfield_resample,
-                                            NULL, rot_angle,
-                                            GWY_INTERPOLATION_BSPLINE,
-                                            GWY_ROTATE_RESIZE_EXPAND);
+            else {
+                dfield_rotate = gwy_data_field_new_rotated(dfield,
+                                                           NULL, rot_angle,
+                                                           GWY_INTERPOLATION_BSPLINE,
+                                                           GWY_ROTATE_RESIZE_EXPAND);
+            }
             gwy_data_field_invert(dfield_rotate, TRUE, FALSE, FALSE);
             width = gwy_data_field_get_xreal(dfield_rotate);
             height = gwy_data_field_get_yreal(dfield_rotate);
-            oblique_angle = 1;
+            oblique_angle = TRUE;
         }
 
         if (oblique_angle) {
@@ -545,7 +558,6 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
             xmlFree(xmlPropValue1);
             g_free(tempStr);
             g_object_unref(dfield_rotate);
-            g_object_unref(dfield_resample);
         }
         else {
             xmlPropValue1 = getprop(childNode, "Label");
@@ -750,3 +762,5 @@ readSpectra(GwyContainer *container, xmlDoc *doc,
 
     return TRUE;
 }
+
+/* vim: set cin et ts=4 sw=4 cino=>1s,e0,n0,f0,{0,}0,^0,\:1s,=0,g1s,h0,t0,+1s,c3,(0,u0 : */
