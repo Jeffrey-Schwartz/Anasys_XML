@@ -212,6 +212,8 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
     gdouble zUnitMultiplier;
     guint32 resolution_x;
     guint32 resolution_y;
+    guint32 new_resolution_x;
+    guint32 new_resolution_y;
     guint32 num_px;
     guint32 oblique_angle;
     gchar *zUnit;
@@ -220,6 +222,7 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
     guchar *decodedData;
     guchar *base64DataString;
     GwyDataField *dfield;
+    GwyDataField *dfield_resample;
     GwyDataField *dfield_rotate;
     GwyDataField *dfield_temp;
     GwyContainer *meta;
@@ -245,6 +248,8 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
         zUnitMultiplier = 1.0;
         resolution_x = 0;
         resolution_y = 0;
+        new_resolution_x = 0;
+        new_resolution_y = 0;
         num_px = 0;
         oblique_angle = 0;
         zUnit = NULL;
@@ -479,7 +484,18 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
         }
         else {
             const gdouble rot_angle = PI_over_180 * scan_angle;
-            dfield_rotate = gwy_data_field_new_rotated(dfield,
+            dfield_resample = dfield;
+            if ( (resolution_x > 128) || (resolution_y > 128) ) {
+                new_resolution_x = GWY_ROUND(0.125*resolution_x);
+                new_resolution_y = GWY_ROUND(0.125*resolution_y);
+                new_resolution_x = CLAMP(new_resolution_x, 16, 128);
+                new_resolution_y = CLAMP(new_resolution_y, 16, 128);
+                dfield_resample = gwy_data_field_new_resampled(dfield,
+                                                new_resolution_x,
+                                                new_resolution_y,
+                                                GWY_INTERPOLATION_BSPLINE);
+            }
+            dfield_rotate = gwy_data_field_new_rotated(dfield_resample,
                                             NULL, rot_angle,
                                             GWY_INTERPOLATION_BSPLINE,
                                             GWY_ROTATE_RESIZE_EXPAND);
@@ -529,6 +545,7 @@ readHeightMaps(GwyContainer *container, xmlDoc *doc, const xmlNode *curNode,
             xmlFree(xmlPropValue1);
             g_free(tempStr);
             g_object_unref(dfield_rotate);
+            g_object_unref(dfield_resample);
         }
         else {
             xmlPropValue1 = getprop(childNode, "Label");
